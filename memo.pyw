@@ -588,13 +588,13 @@ class MainWindow(QMainWindow):
         settings.beginGroup("Memo")
         geometry = settings.value("geometry")
 
-        #QMainWindowの位置と範囲
+      
         (self.restoreGeometry(geometry)
          if geometry is not None
          else
          self.setGeometry(500, 300, 500, 500)
          )
-        #フォント
+        
         font = settings.value("defaultFont")
         (
             self.memo.document().setDefaultFont(font)
@@ -1171,7 +1171,6 @@ class Memo(QTextEdit):
     def zoomTo(self, value):
         if 1 < value < 50:
             diff = value - self.current_zoomFactor
-            print(diff, value)
             self.current_zoomFactor = value
             self.zoomIn(diff) if diff > 0 else self.zoomOut(abs(diff))
             percentage = value*10
