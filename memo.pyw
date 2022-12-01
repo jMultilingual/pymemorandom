@@ -580,7 +580,7 @@ class MainWindow(QMainWindow):
 
     def settings(self):
 
-        settings = QSettings(INITFILE, QSettings.IniFormat)
+        settings = QSettings(INIFILE, QSettings.IniFormat)
 
         settings.beginGroup("Memo")
         geometry = settings.value("geometry")
@@ -594,6 +594,7 @@ class MainWindow(QMainWindow):
         font = settings.value("defaultFont")
         (
             self.memo.document().setDefaultFont(font)
+            self.memo.zoomTo(font.pointSize())
             if font is not None
             else
             QFont('Segoe UI')
@@ -669,7 +670,7 @@ class MainWindow(QMainWindow):
                 return
         elif self.filename:
             self.oversave()
-##            s = QSettings(INITFILE, QSettings.IniFormat)
+##            s = QSettings(INIFILE, QSettings.IniFormat)
 ##            s.beginGroup("Memo")
 ##            s.setValue("geometry", self.saveGeometry())
 ##            s.setValue("statusBar", int(self.statusBar().isVisible()))
