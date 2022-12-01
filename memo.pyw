@@ -2,19 +2,15 @@ from PySide6.QtWidgets import (QApplication, QInputDialog, QMainWindow, QMenu, Q
                                 QDialog, QLineEdit, QToolButton, QSpacerItem, QPushButton, QHBoxLayout, QVBoxLayout, QSpinBox,
                                QTextEdit, QMessageBox, QFontComboBox)
 
-from PySide6.QtGui import QAction, QKeySequence, QTextDocument, QTextCharFormat, QBrush, QTextCursor, QPainter
-from PySide6.QtCore import Qt, QSize, QDateTime, QPoint, QUrl, QTextStream, QFile, QSaveFile, QUrl, QStringConverter, QRunnable, QProcess, QThreadPool, QEvent, QSettings, QLocale
+from PySide6.QtGui import QAction, QActionGroup, QFont, QKeySequence, QTextDocument, QTextCharFormat, QBrush, QTextCursor, QPainter
+from PySide6.QtCore import Qt, QSize, QDateTime, QPoint, QUrl, QTextStream, QFile, QSaveFile, QUrl, QStringConverter, QRunnable, QProcess, QThreadPool, QEvent, QSettings
 
 from PySide6.QtPrintSupport import QPrinter, QPrintPreviewDialog
 import sys
 
-language_dict = {"ja":QLocale.Japanese,
-                 "en":QLocale.English,
-                 "fr":QLocale.French}
+from resources import resources
 
-country_dict = {"JP":QLocale.Japan,
-                "GB":QLocale.UnitedKingdom,
-                "FR":QLocale.France}
+
 
 
 INIFILE = "config.ini"
@@ -529,14 +525,18 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        
         self.filename = ""
 
         self.memo = Memo(self)
+        
         self.setCentralWidget(self.memo)
 
         self.initFontDialog()
         self.initMenu()
         self.initStatusBar()
+
+    
 
         self.encodeFileDialog = QFileDialog()
         self.encodeComboBox = QComboBox()
@@ -576,79 +576,56 @@ class MainWindow(QMainWindow):
         )
         
         
-        
+    
+
+    
 
     def settings(self):
 
-        settings = QSettings(INIFILE, QSettings.IniFormat)
+        settings = QSettings(INIFILE, QSettings.IniFormat)       
+  
 
         settings.beginGroup("Memo")
         geometry = settings.value("geometry")
 
+        #QMainWindowの位置と範囲
         (self.restoreGeometry(geometry)
          if geometry is not None
          else
          self.setGeometry(500, 300, 500, 500)
          )
-
+        #フォント
         font = settings.value("defaultFont")
         (
             self.memo.document().setDefaultFont(font)
-            self.memo.zoomTo(font.pointSize())
+            
             if font is not None
             else
-            QFont('Segoe UI')
+            self.memo.document().setDefaultFont(QFont('Segoe UI', 10))
+            
+            
         )
-
+        self.memo.zoomTo(self.memo.document().defaultFont().pointSize())
+        #ステータスバー
         isStatusBarVisible = settings.value("statusBar", 1)
-        self.statusBarAction.setChecked(isStatusBarVisible)
+        self.statusBarAction.setChecked(int(isStatusBarVisible))
+        #ラインウラップ
         isLineWrapVisible = settings.value("lineWrap", 1)
 
-        self.wrapAction.setChecked(isLineWrapVisible)
+        self.wrapAction.setChecked(int(isLineWrapVisible))
 
         self.memo.current_zoomFactor = (
             self.memo.document().defaultFont().pointSize()
             )
-        language = settings.value("language", "ja")
-        country  = settings.value("coutry", "JA")
-        if language and country:
-            locale = QLocale(language, country)
-            self.setLocale(locale)
-        else:
-            self.setLocale(
-                QLocale(QLocale.Japanese,
-                        QLocale.Japan
-                        )
-                )
-            locale_name = settings.value("locale", "ja")
-            locale = QLocale.system()
-
-        if locale_name:
-            language, country = locale_name.split("_")
-            language = language_dict[language]
-            country = country_dict[country]
-
-            locale = QLocale(language, country)
-            if locale == QLocale(
-                QLocale.Japanese,
-                QLocale.Japan):
-
-                self.japaneseAction.toggled[bool].emit(True)
-
-            elif locale == QLocale(
-                QLocale.English,
-                QLocale.UnitedStates):
-
-                self.translator_en_En = QTranslator()
-                readable = self.translator_en_EN.load(
-                                    locale,
-                                    "en_EN.qm",
-                                    directory = ":/translations"
-                                    )
-                if readable:
-                    self.englishAction.toggled[bool].emit(True)
+        
 
         settings.endGroup()
+
+    def showEvent(self, event):
+        self.settings()
+        
+
+        super().showEvent(event)
 
     def closeEvent(self, event):
 
@@ -656,7 +633,7 @@ class MainWindow(QMainWindow):
             message = QMessageBox.warning(
                 None,
                 '',
-                f"ドキュメントは保存されていません。\保存をして終了しますか？",
+                f"ドキュメントは保存されていません。\n保存をして終了しますか？",
                 QMessageBox.Ok,
                 QMessageBox.Cancel
                 )
@@ -670,14 +647,21 @@ class MainWindow(QMainWindow):
                 return
         elif self.filename:
             self.oversave()
-##            s = QSettings(INIFILE, QSettings.IniFormat)
-##            s.beginGroup("Memo")
-##            s.setValue("geometry", self.saveGeometry())
-##            s.setValue("statusBar", int(self.statusBar().isVisible()))
-##            s.setValue("lineWrap", int(self.memo.lineWrapMode() == QPlainTextEdit.WidgetWidth))
-##            s.setValue("defaultFont", self.memo.document().defaultFont())
-##            s.setValue("locale", self.locale().name())
-##            s.endGroup()
+            
+        s = QSettings(INIFILE, QSettings.IniFormat)
+      
+     
+        s.beginGroup("Memo")
+        s.setValue("geometry", self.saveGeometry())
+        s.setValue("statusBar", str(int(self.statusBar().isVisible())))
+        s.setValue("lineWrap", str(int(self.memo.lineWrapMode() == QTextEdit.WidgetWidth)))
+        s.setValue("defaultFont", self.memo.document().defaultFont())
+       
+      
+        
+        
+        
+        s.endGroup()
 
         return super().closeEvent(event)
     
@@ -732,8 +716,10 @@ class MainWindow(QMainWindow):
     def event(self, event):
         if event.type() == QEvent.StatusTip:
             self.showActions()
+
+       
         return super().event(event)
-    
+
 
 
 
@@ -856,7 +842,19 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage("読込完了しました。", 3000)
                 self.memo.document().setModified(False)
                 self.writeLog()
-                    
+                
+    def event(self, event):
+
+        if event.type() == QEvent.StatusTip:
+            self.showActions()
+
+       
+
+         
+            
+       
+
+        return super().event(event)
 
     def initMenu(self):
 
@@ -943,9 +941,9 @@ class MainWindow(QMainWindow):
      
 
         self.wrapAction = QAction(self.tr('行の端での折り返し'), shortcut=lineWrapKeySeq, checkable=True, checked=True)
-        self.wrapAction.toggled.connect(lambda: self.memo.setLineWrapMode(QPlainTextEdit.LineWrapMode(not self.memo.lineWrapMode().value)))
+        self.wrapAction.toggled.connect(lambda checked: self.memo.setLineWrapMode(QTextEdit.LineWrapMode(not self.memo.lineWrapMode().value)))
         
-  
+          
         
         
         self.displayMenu.addMenu(self.zoomMenu)
@@ -956,9 +954,13 @@ class MainWindow(QMainWindow):
         self.displayMenu.addAction(self.statusBarAction)
         self.displayMenu.addAction(self.wrapAction)
 
+
+
         self.menuBar().addMenu(self.fileMenu)
         self.menuBar().addMenu(self.editMenu)
         self.menuBar().addMenu(self.displayMenu)
+      
+
 
     def initFontDialog(self):
 
@@ -1194,20 +1196,14 @@ def main():
     app = QApplication([])
     app.setOrganizationName("Qt User")
     app.setApplicationName("PyMemo")
-    s = QSettings(INITFILE, QSettings.IniFormat)
-    s.beginGroup("Memo")
-    locale_name = s.value("locale")
-    s.endGroup()
-    locale = QLocale.system()
+    s = QSettings(INIFILE, QSettings.IniFormat)
+    
+ 
 
-    if locale_name:
-        language, country = locale_name.split("_")
-        language = language_dict[language]
-        coutnry = country_dict[country]
-        locale = QLocale(language, country)
-        
+   
     t = MainWindow()
-    t.setLocale(locale)
+  
+    
     
     t.show()
     sys.exit(app.exec())
