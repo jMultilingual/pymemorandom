@@ -668,8 +668,8 @@ class MainWindow(QMainWindow):
     def oversave(self):
 
         if self.filename:
-            if not self.filename.endswith(".txt"):
-                self.filename += ".txt"
+            if not self.filename.endswith(".pxt"):
+                self.filename += ".pxt"
 
             file = QSaveFile(self.filename)
             if file.open(QSaveFile.WriteOnly):
@@ -770,7 +770,7 @@ class MainWindow(QMainWindow):
         if not self.encodeFileDialog.isVisible():
             self.encodeFileDialog.setVisible(True)
             self.encodeFileDialog.setFileMode(QFileDialog.AnyFile)
-            self.encodeFileDialog.selectNameFilter("Text Files(*.txt)")
+            self.encodeFileDialog.selectNameFilter("Text Files(*.pxt)")
             self.encodeFileDialog.selectUrl(QUrl("home"))
             self.encodeFileDialog.setAcceptMode(
                 QFileDialog.AcceptMode.AcceptSave
@@ -783,8 +783,8 @@ class MainWindow(QMainWindow):
                 encode = self.encodeComboBox.currentText()
 
                 if file:
-                    if not file.endswith(".txt"):
-                        file += ".txt"
+                    if not file.endswith(".pxt"):
+                        file += ".pxt"
                     file = QSaveFile(file)
                     if file.open(QSaveFile.WriteOnly):
                         out = QTextStream(file)
@@ -814,7 +814,7 @@ class MainWindow(QMainWindow):
                                             None,
                                             self.tr("メモ帳の読込"),
                                             "home",
-                                            "Files (*.txt)"
+                                            "Files (*.pxt)"
                                             )
         if file:
             self.filename = file
