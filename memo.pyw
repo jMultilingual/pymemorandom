@@ -266,6 +266,7 @@ class FindDialog(QDialog):
         size = cursorRect.size()
         this_geo = self.geometry()
 
+        print(cursorRect)
         cursorPos = (
             self.doc.parent().window().geometry().topLeft()
             +
@@ -489,18 +490,18 @@ class FindDialog(QDialog):
     def recurReplaceFindPosition(self, find_text, replaced_text, start_position, end_position, flag):
 
         find_tc = self.doc.find(find_text, start_position, flag)
-
+        
         if not find_tc.isNull():
             if find_tc.position() <= end_position:
 
-                selectionStart = find_tc.selectionStart()
+
                 
                 find_tc.insertText(replaced_text)
-                new_startposition = find_tc.position()
+                
 
                 if find_text < replaced_text:
                     end_position += len(replaced_text) - len(find_text)
-                self.recurReplaceFindPosition(find_text, replaced_text, new_startposition, end_position, flag)
+                self.recurReplaceFindPosition(find_text, replaced_text, find_tc.position(), end_position, flag)
 
     
             
@@ -567,13 +568,11 @@ class MainWindow(QMainWindow):
     def setFontPointSize(self, value):
 
         doc = self.memo.document()
+        
         font = doc.defaultFont()
-        (
-            doc.parent().zoomInByAction()
-            if value > font.pointSize()
-            else
-            doc.parent().zoomOutByAction()
-        )
+        font.setPointSize(value)
+     
+        doc.setDefaultFont(font)
         
         
     
@@ -596,6 +595,7 @@ class MainWindow(QMainWindow):
          )
         
         font = settings.value("defaultFont")
+    
         (
             self.memo.document().setDefaultFont(font)
             
@@ -614,9 +614,6 @@ class MainWindow(QMainWindow):
 
         self.wrapAction.setChecked(int(isLineWrapVisible))
 
-        self.memo.current_zoomFactor = (
-            self.memo.document().defaultFont().pointSize()
-            )
         
 
         settings.endGroup()
@@ -743,14 +740,16 @@ class MainWindow(QMainWindow):
                 None,
                 self.tr('未保存'),
                 self.tr("文書は変更されています。保存しますか？"),
-                QMessageBox.Ok|QMessageBox.No|QMessageBox.Cancel)
+                QMessageBox.Ok|
+                QMessageBox.No|
+                QMessageBox.Cancel)
             if m == QMessageBox.Ok:
                 self.save()
             elif m == QMessageBox.No:
                 pass
             elif m == QMessageBox.Cancel:
                 return
-        self.clear()
+        self.memo.clear()
         self.memo.document().setModified(False)
         self.filename = ""
 
@@ -761,9 +760,11 @@ class MainWindow(QMainWindow):
         
             
         
-    def save(self, saveAs = False):
+    def save(self, overSave = True):
         self.statusBar().showMessage('保存中')
-        if self.filename and saveAs:
+        
+        if self.filename and not overSave:
+            print("こっち来てますよ")
             if self.oversave():
                 return
 
@@ -968,7 +969,7 @@ class MainWindow(QMainWindow):
         self.fontComboBox.currentFontChanged.connect(
             self.setFont_
             )
-        self.fontSpinBox = QSpinBox()
+        self.fontSpinBox = QSpinBox(minimum=1, maximum=50)
         self.fontSpinBox.valueChanged[int].connect(
             self.setFontPointSize
             )
@@ -1000,9 +1001,11 @@ class MainWindow(QMainWindow):
     def showFontComboBox(self):
 
         self.originalFont = self.memo.document().defaultFont()
+       
         self.fontSpinBox.setValue(
             self.memo.document().defaultFont().pointSize()
             )
+       
         answer = self.fontDialog.exec()
         
         if answer == QDialog.Accepted:
@@ -1041,6 +1044,7 @@ class Memo(QTextEdit):
     def __init__(self, window, parent=None):
         super().__init__(parent)
 
+        
         self.defaultPointSize = 10
         self._window = window
         self.doc = self.document()
@@ -1048,8 +1052,11 @@ class Memo(QTextEdit):
         defaultFont = self.doc.defaultFont()
         defaultFont.setPointSize(self.defaultPointSize)
         self.doc.setDefaultFont(defaultFont)
-        self.current_zoomFactor = defaultFont.pointSize()
-        self.zoomIn(1)
+       
+        self.zoomIn(10)
+        self.setFont(defaultFont)
+
+        
 
         self.cursorPositionChanged.connect(
                         self.statusBarUpdate
@@ -1086,7 +1093,7 @@ class Memo(QTextEdit):
     def newWindow(self):
 
         r = SubExe()
-        QThreadPool.globalInstance().start(r)
+        QProcess.execute("memo.exe")
         
     def printPreview(self):
 
@@ -1148,30 +1155,30 @@ class Memo(QTextEdit):
 
     def zoomInByAction(self):
         
-        if self.current_zoomFactor < 50:
-            self.current_zoomFactor += 1
-        self.zoomIn(1)
-        percentage = self.current_zoomFactor*self.defaultPointSize
-        self.window().zoomLabel.setText(f"{percentage}%")
+        if self.doc.defaultFont().pointSize()< 50:
+       
+            self.zoomIn(1)
+            percentage = self.doc.defaultFont().pointSize()*self.defaultPointSize
+            self.window().zoomLabel.setText(f"{percentage}%")
 
     def zoomOutByAction(self):
-        if self.current_zoomFactor > 1:
-            self.current_zoomFactor -= 1
+        if self.doc.defaultFont().pointSize() > 1:
+          
             self.zoomOut(1)
-            percentage = self.current_zoomFactor*self.defaultPointSize
+            percentage = self.doc.defaultFont().pointSize()*self.defaultPointSize
             self.window().zoomLabel.setText(f"{percentage}%")
 
     def zoomBaseByAction(self):
-        diff = 10 - self.current_zoomFactor
-        self.current_zoomFactor = self.defaultPointSize
+        diff = 10 - self.doc.defaultFont().pointSize()
+   
         self.zoomIn(diff) if diff > 0 else self.zoomOut(abs(diff))
         percentage = 100
         self.window().zoomLabel.setText(f"{percentage}%")
         
     def zoomTo(self, value):
-        if 1 < value < 50:
-            diff = value - self.current_zoomFactor
-            self.current_zoomFactor = value
+        if 1 <= value <= 50:
+            diff = value - self.doc.defaultFont().pointSize()
+       
             self.zoomIn(diff) if diff > 0 else self.zoomOut(abs(diff))
             percentage = value*10
             self.window().zoomLabel.setText(f"{percentage}%")
