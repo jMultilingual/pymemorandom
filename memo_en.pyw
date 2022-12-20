@@ -930,7 +930,7 @@ class MainWindow(QMainWindow):
         statusBarKeySeq = QKeySequence("Ctrl+Shift+S")
         lineWrapKeySeq = QKeySequence("Ctrl+Shift+L")
 
-        self.zoomMenu = QMenu(self.tr('ズーム(&Z)'))
+        self.zoomMenu = QMenu(self.tr('Zoom(&Z)'))
         self.zoomInAction = QAction(self.tr('Expand'), triggered=self.memo.zoomInByAction, shortcut=QKeySequence.ZoomIn)
         self.zoomOutAction = QAction(self.tr('Schrink'), triggered=self.memo.zoomOutByAction,  shortcut=QKeySequence.ZoomOut)
         self.zoomBaseAction = QAction(self.tr('100%'),triggered=self.memo.zoomBaseByAction, shortcut=QKeySequence(self.tr('Ctrl+*')))
@@ -1025,10 +1025,10 @@ class MainWindow(QMainWindow):
 
     def initStatusBar(self):
 
-        self.rowAndColumnLabel = QLabel(self.tr('行 1, 列 1"'))
+        self.rowAndColumnLabel = QLabel(self.tr('Row 1, Column 1"'))
         self.zoomLabel = QLabel(self.tr('100%'))
         self.encodeLabel = QLabel(self.tr('Utf-8'))
-        self.localeLabel = QLabel(text=self.tr("Locale:English(The United States)"))  
+        self.localeLabel = QLabel(text=self.tr("Locale:English(US)"))  
 
         self.statusBar().addWidget(self.rowAndColumnLabel)
         self.statusBar().addPermanentWidget(self.zoomLabel)
